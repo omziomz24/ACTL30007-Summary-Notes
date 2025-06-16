@@ -4695,6 +4695,35 @@ fit.pr = predict(fit, n.ahead = 24, ci = 0.95) # 24 weeks ahead
 fanchart(fit.pr) # plot prediction + error, graphs show pretty bad predictions
 \end{lstlisting}
 
+\subsection{Auto regressive Models with Conditional Heteroscedasticity - ARCH(p) models}
+\begin{itemize}
+  \item A feature that is frequently observed in asset price data is that a significant change in the price of an asset is often followed by a period of high volatility.
+  \item The class of autoregressive models with conditional heteroskedasticity of order \(p\)—the ARCH\((p)\) models—is defined by
+    \[
+      x_t = \mu + w_t \,\sqrt{\alpha_0 + \sum_{k=1}^p \alpha_k\,(x_{t-k}-\mu)^2},
+      \quad w_t\sim\mathrm{iid}\;N(0,\sigma_w^2).
+    \]
+  \item Because of the scaling of \(w_t\) by past deviations \((x_{t-k}-\mu)^2\), ARCH models capture volatility clustering.
+\end{itemize} \phantom{i}
+
+\begin{itemize}
+  \item If \(p=1\), the ARCH(1) model specializes to
+    \[
+      x_t = \mu + w_t \,\sqrt{\alpha_0 + \alpha\,(x_{t-1}-\mu)^2}.
+    \]
+  \item ARCH models are common in financial time series.  If \(z_t\) is the asset price at day \(t\), then
+    \[
+      x_t = \log\frac{z_t}{z_{t-1}}
+    \]
+    is the daily return.
+  \item Note:
+    \begin{itemize}
+      \item Setting \(\alpha_k=0\) for all \(k\ge1\) “switches off” the ARCH effect, reverting to white noise of variance \(\alpha_0\).
+      \item We are modelling only the conditional variance of \(x_t\) given its past \(p\) values.
+      \item Extending to an ARMA mean structure yields GARCH models.
+    \end{itemize}
+\end{itemize}
+
 
 \newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -6025,6 +6054,169 @@ lines(exp(jj.pr$pred), col = "red", lwd = 1, type = "p")
   \item Overfitting the AR order $p$ in Yule–Walker leads to inflated estimation variance but still solves the system.
   \begin{itemize}
     \item \textbf{True:} A larger $p$ increases parameter uncertainty (variance), though the linear system remains solvable if the matrix is invertible.
+  \end{itemize}
+
+   \item In an ARCH(1) model, the unconditional variance $\Var(x_t)$ exists only if $\alpha_1<1$.
+  \begin{itemize}
+    \item \textbf{True:} Stationarity of the second moment requires $\alpha_1<1$, giving 
+      \[
+        \Var(x_t) \;=\;\frac{\alpha_0}{1-\alpha_1}\,<\infty.
+      \]
+  \end{itemize}
+
+  \item In an ARCH(1) process, the returns $x_t$ are uncorrelated, but the squared returns $x_t^2$ exhibit autocorrelation.
+  \begin{itemize}
+    \item \textbf{True:} ARCH generates “volatility clustering,” so 
+      \(\Cov(x_t,x_{t-k})=0\) but \(\Cov(x_t^2,x_{t-k}^2)\neq0\) for some \(k>0\).
+  \end{itemize}
+
+  %––– New VAR items –––
+  \item A VAR($p$) model is stationary if all eigenvalues of its companion matrix lie strictly within the unit circle.
+  \begin{itemize}
+    \item \textbf{True:} Equivalently, the roots of 
+      \(\det\bigl(I - \Phi_1 z - \cdots - \Phi_p z^p\bigr)=0\)
+      must satisfy \(|z|>1\), which is the same as companion‐matrix eigenvalues having modulus \(<1\).
+  \end{itemize}
+
+  \item A stable VAR($p$) admits a VMA($\infty$) representation in which each component is a linear combination of current and past shocks.
+  \begin{itemize}
+    \item \textbf{True:} Under stationarity \(\bigl(I - \sum_{i=1}^p\Phi_i z^i\bigr)^{-1}\)
+      can be expanded as \(\sum_{j\ge0}\Psi_j z^j\).
+  \end{itemize}
+
+  \item Each equation of a VAR($p$) system can be estimated consistently by OLS on that equation alone.
+  \begin{itemize}
+    \item \textbf{True:} Since all right‐hand‐side regressors are predetermined, OLS is consistent even if the error‐covariance matrix is nondiagonal.
+  \end{itemize}
+
+    \item The theoretical ACF of a pure MA($q$) process decays exponentially toward zero as lag $h\to\infty$.
+  \begin{itemize}
+    \item \textbf{False:} An MA($q$) has autocorrelations $\rho(h)=0$ for all $h>q$, so its ACF cuts off after lag $q$ rather than decays exponentially.
+  \end{itemize}
+
+  \item Pure seasonal ARMA($P,Q$)$_s$ models only have nonzero autocorrelations at integer multiples of the seasonal period $s$.
+  \begin{itemize}
+    \item \textbf{True:} By construction, the autocorrelation $\rho(h)=0$ unless $h$ is a multiple of $s$, since only seasonal lags enter the model.
+  \end{itemize}
+
+  \item Seasonal differencing $(1 - B^s)$ always yields a stationary series, regardless of any nonseasonal trend.
+  \begin{itemize}
+    \item \textbf{False:} Seasonal differencing removes only the seasonal unit root; if a nonseasonal trend remains, further nonseasonal differencing $(1 - B)$ may still be needed.
+  \end{itemize}
+
+  \item In an ARIMA($p,d,q$), the $d$-th difference $\nabla^d x_t$ is guaranteed to be stationary.
+  \begin{itemize}
+    \item \textbf{True:} By definition, $\nabla^d x_t$ follows an ARMA($p,q$) model, which is stationary when its AR roots lie outside the unit circle.
+  \end{itemize}
+
+  \item The Yule–Walker equations can be used to estimate the parameters of an AR($p$) model but not an MA($q$).
+  \begin{itemize}
+    \item \textbf{True:} Yule–Walker relates autocovariances to AR coefficients; there is no analogous closed-form system for pure MA models.
+  \end{itemize}
+
+  \item A pure seasonal MA(1)$_{12}$ model has a nonzero ACF only at lags $h=0$ and $h=\pm12$.
+  \begin{itemize}
+    \item \textbf{True:} The autocovariance is nonzero only at lag 12 (and hence at $-12$), so the ACF is nonzero only at those lags.
+  \end{itemize}
+
+  \item An AR(1) model with $\phi=1$ (a random walk) is both stationary and causal.
+  \begin{itemize}
+    \item \textbf{False:} $\phi=1$ places a unit root on the unit circle, violating stationarity and preventing a decaying impulse-response, so it is nonstationary and noncausal.
+  \end{itemize}
+
+  \item The sample ACF alone can always distinguish between pure AR and ARMA models.
+  \begin{itemize}
+    \item \textbf{False:} ARMA models can exhibit slowly decaying ACFs similar to AR; one usually needs the PACF or other diagnostics to differentiate them.
+  \end{itemize}
+
+  \item In an ARCH(1) model, the conditional variance $\Var(x_t\mid \mathcal F_{t-1})$ depends on $(x_{t-1}-\mu)^2$.
+  \begin{itemize}
+    \item \textbf{True:} By definition, $\Var(x_t\mid \mathcal F_{t-1})=\alpha_0+\alpha_1(x_{t-1}-\mu)^2$, so it directly depends on the previous squared deviation.
+  \end{itemize}
+
+  \item The ARIMA(0,1,1) (IMA(1,1)) model is mathematically equivalent to simple exponential smoothing.
+  \begin{itemize}
+    \item \textbf{True:} The IMA(1,1) model yields forecasts that follow an exponentially weighted moving average (EWMA) with smoothing parameter equal to the MA coefficient.
+  \end{itemize}
+  
+  \item Multiplicative SARIMA models combine seasonal and nonseasonal AR and MA polynomials multiplicatively.
+  \begin{itemize}
+    \item \textbf{True:} A SARIMA\((p,d,q)\times(P,D,Q)_s\) model is written as \(\Phi_P(B^s)\,\phi(B)\,\nabla_s^D\nabla^d x_t = \Theta_Q(B^s)\,\theta(B)\,w_t\).
+  \end{itemize}
+
+  \item In a pure seasonal ARMA\((P,Q)_s\) model, the theoretical ACF is nonzero only at lags that are multiples of \(s\), up to \(\max(P,Q)\times s\).
+  \begin{itemize}
+    \item \textbf{True:} Seasonal lags beyond \(\max(P,Q)\,s\) have zero autocorrelation.
+  \end{itemize}
+
+  \item Parameter redundancy in ARMA models occurs if the AR and MA polynomials share a common factor.
+  \begin{itemize}
+    \item \textbf{True:} Multiplying both sides of an ARMA by a factor \(\eta(B)\) gives the same process with extra, redundant parameters.
+  \end{itemize}
+
+  \item The Box–Pierce (Portmanteau) test for VAR residuals is asymptotically chi‐square under the null of no residual autocorrelation.
+  \begin{itemize}
+    \item \textbf{True:} Under white‐noise residuals, the Portmanteau statistic follows \(\chi^2\) with appropriate degrees of freedom.
+  \end{itemize}
+
+  \item Over‐differencing a time series can introduce artificial moving‐average structure and may still leave nonstationarity.
+  \begin{itemize}
+    \item \textbf{True:} Applying more differences than necessary can create an MA component and need not guarantee stationarity.
+  \end{itemize}
+
+  \item The partial autocorrelation at lag \(h\) of a differenced series \(\nabla^d x_t\) can help identify the AR order of the original ARIMA model.
+  \begin{itemize}
+    \item \textbf{True:} After differencing \(d\) times, the PACF of the resulting stationary series cuts off at the AR order \(p\).
+  \end{itemize}
+
+    %––– Forecasting True/False items –––
+  \item The best linear predictor (BLP) of \(x_{n+m}\) is obtained by solving \(E\bigl[(x_{n+m}-\hat x_{n}^{\,n+m})x_k\bigr]=0\) for \(k=0,1,\dots,n\).
+  \begin{itemize}
+    \item \textbf{True:} These “prediction equations” guarantee the BLP minimizes mean square error.
+  \end{itemize}
+
+  \item For a causal, invertible ARMA(\(p,q\)), the infinite‐past forecast \(\tilde x_{n+m}=E[x_{n+m}\mid x_n,x_{n-1},\dots]\) is easier to compute than the finite‐sample forecast \(\hat x_{n}^{\,n+m}\).
+  \begin{itemize}
+    \item \textbf{True:} Conditioning on the infinite past lets us use the MA(∞) or AR(∞) expansion directly without solving an \(n\times n\) system.
+  \end{itemize}
+
+  \item The Durbin–Levinson algorithm can be used to compute the one‐step‐ahead forecast coefficients \(\{\phi_{n,k}\}\) without ever inverting the full autocovariance matrix.
+  \begin{itemize}
+    \item \textbf{True:} It recursively builds the \(\phi_{n,k}\) and prediction error variances \(P_{n}^{\,n+1}\).
+  \end{itemize}
+
+  \item The one‐step‐ahead mean‐square prediction error is \(P_{n}^{\,n+1}=\gamma(0)-\gamma_n'\,\Gamma_n^{-1}\,\gamma_n\).
+  \begin{itemize}
+    \item \textbf{True:} This follows directly from the Yule–Walker–type “prediction equations.”
+  \end{itemize}
+
+  \item In practice, truncating the infinite sums in the ARMA forecast formula (i.e.\ using only \(x_1,\dots,x_n\)) introduces no approximation error for AR(\(p\)) models when forecasting any horizon \(m\).
+  \begin{itemize}
+    \item \textbf{True:} For pure AR(\(p\)), the infinite‐past and finite‐sample predictors coincide once \(n>p\), so no truncation is needed.
+  \end{itemize}
+
+  \item The \(m\)-step‐ahead forecast error variance for a causal ARMA satisfies
+  \[
+    P_{n}^{\,n+m} = \sigma_w^2\sum_{j=0}^{m-1}\psi_j^2,
+  \]
+  and therefore converges to \(\gamma(0)\) exponentially fast as \(m\to\infty\).
+  \begin{itemize}
+    \item \textbf{True:} The \(\psi_j\) decay geometrically for a stable ARMA, so \(P_{n}^{\,n+m}\to\gamma(0)\) quickly.
+  \end{itemize}
+
+  \item The infinite‐past forecast \(\tilde x_{n+m}\) and the finite‐sample forecast \(\hat x_{n}^{\,n+m}\) are identical for all \(m\) when the model is invertible.
+  \begin{itemize}
+    \item \textbf{False:} They only coincide asymptotically or under extra conditions; in general \(\hat x_{n}^{\,n+m}\) solves a different (finite) system.
+  \end{itemize}
+
+  \item The ARIMA(0,1,1) model yields exactly the same point forecasts as simple exponential smoothing with smoothing parameter equal to the MA coefficient.
+  \begin{itemize}
+    \item \textbf{True:} The IMA(1,1) formulation is algebraically equivalent to an EWMA forecast.
+  \end{itemize}
+
+  \item Long‐range forecasts from a stable ARMA process always revert exponentially fast to the series mean.
+  \begin{itemize}
+    \item \textbf{True:} As \(m\to\infty\), \(\tilde x_{n+m}\to\mu_x\) at the same geometric rate as the MA(∞) coefficients decay.
   \end{itemize}
 \end{enumerate}
 

@@ -40,7 +40,7 @@
 \begin{center}
 {\LARGE \textbf{ACTL30007 Actuarial Modelling III}}\\[1.5em]
 {\Large Comprehensive Exam Review Notes}\\[10em]
-{\large \textit{Student Name: Omar Amin}}\\[1em]
+{\large \textit{Omar Amin}}\\[1em]
 {\large Semester 1, 2025}
 \end{center}
 \end{titlepage}
@@ -1538,7 +1538,9 @@ censoring[censoring == TRUE] <- NA
 xcens <- cbind.data.frame(left = x, right = censoring)
 
 # And fitting (NOT alloowing for truncation):
-fit.gamma.xcens <- fitdistcens(xcens, "gamma", start = list(shape =                                 mean(xcens$left)^2/var(xcens$left), rate = mean(xcens$left)/var(xcens$left)))
+fit.gamma.xcens <- fitdistcens(xcens, "gamma", start = list(
+                            shape =mean(xcens$left)^2/var(xcens$left),
+                            rate = mean(xcens$left)/var(xcens$left)))
 summary(fit.gamma.xcens)
 ## Fitting of the distribution ' gamma ' By maximum likelihood on censored## Parameters
 ##        estimate   Std. Error
@@ -1547,8 +1549,10 @@ summary(fit.gamma.xcens)
 ## Loglikelihood: -5412.521 AIC: 10829.04 BIC: 10840.12
 
 # And fitting (ALLOWING for truncation):
-fit.tgamma.xcens <- fitdistcens(xcens, "tgamma", start = list(shape =                               mean(xcens$left)^2/var(xcens$left), rate = mean(xcens$left)/var(xcens$left)),
-fix.arg = list(low = min(xcens$left)))
+fit.tgamma.xcens <- fitdistcens(xcens, "tgamma", start = list
+                        shape = mean(xcens$left)^2/var(xcens$left),
+                        rate = mean(xcens$left)/var(xcens$left)),
+                        fix.arg = list(low = min(xcens$left)))
 summary(fit.tgamma.xcens)
 ## Fitting of the distribution ' tgamma ' By maximum likelihood on censored## Parameters
 ##        estimate  Std. Error
@@ -1671,9 +1675,8 @@ sim.gamma <- rgamma(10000, shape = fit.param[1], rate = fit.param[2])
 plot(ecdf(orig_x), main = "Empirical CDF plots", col = "black")
 lines(ecdf(sim.tcens.gamma), col = "blue", type = "s")
 lines(ecdf(sim.gamma), col = "red", type = "s")
-legend("bottomright", legend = c("Original distribution",
-    "Multilevel fit", "Naive fit"), lty = 1, col = c("black",
-    "blue", "red"))
+legend("bottomright", legend = c("Original distribution", "Multilevel fit", "Naive fit"),
+    lty = 1, col = c("black", "blue", "red"))
 \end{lstlisting}
 \begin{figure}[H]
     \centering
@@ -1825,8 +1828,7 @@ Information criteria penalize model complexity by adding a penalty to the (negat
 \subsubsection{SUVA data Hypothesis Test Statistics}
 \noi For MLE:
 \begin{lstlisting}
-gofstat(list(fit.weibull.mle, fit.lnorm.mle, fit.gamma.mle),
-    fitnames = plot.legend)
+gofstat(list(fit.weibull.mle, fit.lnorm.mle, fit.gamma.mle), fitnames = plot.legend)
 ## Goodness-of-fit statistics
 ##                                 Weibull   lognormal      gamma
 ## Kolmogorov-Smirnov statistic 0.07105097  0.04276791 0.03385082
@@ -1855,8 +1857,7 @@ gofstat(list(fit.weibull.mle, fit.lnorm.mle, fit.gamma.mle),
 
 \noi R can also provide the results from the GOF hypothesis tests. For example:
 \begin{lstlisting}
-gammagof <- gofstat(list(fit.gamma.mle, fit.lnorm.mle),
-    fitnames = c("gamma MLE", "lognormal MLE"),
+gammagof <- gofstat(list(fit.gamma.mle, fit.lnorm.mle), fitnames = c("gamma MLE", "lognormal MLE"),
     chisqbreaks = c(10:20/2))
 gammagof$chisqpvalue
 ##    gamma MLE lognormal MLE
@@ -2057,13 +2058,31 @@ has mixed density
   \end{cases}
 \]
 In \textsf{R} you can then call  
-\verb|coverage(pdf=dgamma,cdf=pgamma,deductible=2,limit=20)|  
+\verb|actuar::coverage(pdf=dgamma,cdf=pgamma,deductible=2,limit=20)|  
  ($d=2, \ u=20$) to get the corresponding density ($f_{X}(x)$) for fitting.
 
 \begin{lstlisting}
-fit.gamma.xcens2 <- MASS::fitdistr(xcens$left - 2, f,
-    start = list(shape = mean(xcens$left)^2/var(xcens$left),
-        rate = mean(xcens$left)/var(xcens$left)))
+set.seed(123)
+
+DEDUCTIBLE <- 2
+LIMIT <- 20
+
+n <- 2000 # number of observations
+x <- rgamma(n, shape = 2, rate = 0.2) # simulating sample of x's
+x <- x[x > DEDUCTIBLE] # left-truncation at 2
+n - length(x) # number of observations that were truncated
+## [1] 123
+censoring <- x > LIMIT # we will censor at 20 (limit)
+x[x > LIMIT] <- LIMIT # censoring at 20 (limit)
+# Transform into right format
+censoring[censoring == FALSE] <- x[censoring == FALSE]
+censoring[censoring == TRUE] <- NA
+xcens <- cbind.data.frame(left = x, right = censoring)
+
+f <- actuar::coverage(pdf = dgamma, cdf = pgamma, deductible = DEDUCTIBLE, limit = LIMIT)
+
+fit.gamma.xcens2 <- MASS::fitdistr(xcens$left - DEDUCTIBLE, f, start = list(shape =
+    mean(xcens$left)^2/var(xcens$left), rate = mean(xcens$left)/var(xcens$left)))
 fit.gamma.xcens2
 ##    shape         rate
 ## 2.03990496    0.20142871
@@ -2735,6 +2754,7 @@ for all $0\le u_1,\dots,u_n\le1$ and for some continuous function $\psi$ (called
     \item $\psi(1)=0$;
     \item $\psi$ is strictly decreasing ($\psi'(t) < 0$); and
     \item $\psi$ is convex ($\psi''(t) \geq 0$).
+    \item \textit{This is NOT a requirement}, but $\psi(t)$ maps $[0,1] \rightarrow [0,\infty]$ and $\psi^{-1}(t)$ maps $[0, \infty] \rightarrow [0,1]$.
 \end{enumerate} \phantom{i}
 
 \noi The Kendall’s $\tau$ and the generator function $\psi(t)$ are related via
@@ -2980,9 +3000,9 @@ $$H_{\gamma; \ \mu, \sigma}(x) = \begin{cases}
 \makecell{Burr \\ $F$ \\ Log-gamma \\ Pareto \\ $t$} \\
 \hline
 \makecell{\textbf{Range of values} \\ \textbf{permitted}} & 
-$x < \mu - \dfrac{\sigma}{\gamma}$ & 
+$x \leq \mu - \dfrac{\sigma}{\gamma}$ & 
 $-\infty < x < \infty$ & 
-$x > \mu - \dfrac{\sigma}{\gamma}$ \\
+$x \geq \mu - \dfrac{\sigma}{\gamma}$ \\
 \hline
 \end{tabular}
 \end{table}
@@ -3044,7 +3064,7 @@ outer = TRUE, cex = 1.5)
     \item A function $h(x)$ is regularly varying at $\infty$ with index $\rho$ if
         $$\lim_{x\rightarrow\infty}\frac{h(tx)}{h(x)} = t^\rho \Leftrightarrow h(x) = x^\rho L(x), \: \ t > 0$$
 \end{itemize}
-\noi The limiting distribution of hte normalised maximum from an underlying df $F$ is of Fr\'echet type ($\gamma > 0$) if its survival function:
+\noi The limiting distribution of the normalised maximum from an underlying df $F$ is of Fr\'echet type ($\gamma > 0$) if its survival function:
 $$\tilde{F}(x) = 1 - F(x) = x^{\boldsymbol{-\frac{1}{\gamma}}}L(x)$$
 \noi The rate of decay $\frac{1}{\gamma}$ is often known as the tail index of the distribution. We also know $\mathbb{E}[X^k] = \infty$ for $k > \frac{1}{\gamma}$. \\
 
@@ -3484,7 +3504,7 @@ legend("topleft", legend = r[6])
 \subsubsection{Sample cross-covariances and cross-correlations}
 \noi \textbf{Sample cross-covariance function}
 $$\hat \gamma_{xy}(h) = \frac{1}{n}\sum_{t=1}^{n-h}{(x_{t+h} - \bar x)(y_t - \bar y)}$$
-\noi where $\hat \gamma_{xy}(-h) = \hat \gamma_{xy} = h$ determines the function for \texit{negative} lags \\
+\noi where $\hat \gamma_{xy}(-h) = \hat \gamma_{xy}(h)$ determines the function for \texit{negative} lags \\
 
 \noi \textbf{Sample cross-correlation function}
 $$-1 \leq \hat \rho_{xy}(h) = \frac{\hat \gamma_{xy}(h)}{\sqrt{\hat \gamma_{x}(0) \hat \gamma_y(0)}} \leq 1$$
@@ -3504,7 +3524,7 @@ $$y_t = Ax_{t - \ell} + w_t$$
 
 \noi \textbf{SOI and Recruitment correlation analysis}
 \begin{lstlisting}
-ccf(rec, soi, 48, main = "SOI vs recruitment, ylab = "CCF") # so y = rec and x = soi
+ccf(rec, soi, 48, main = "SOI vs recruitment", ylab = "CCF") # so y = rec and x = soi
 # The plot has a peak at h=6, suggesting SOI leads recruitment by 6 months
 \end{lstlisting}
 \newpage
@@ -3570,6 +3590,77 @@ plot(resid(fit), type="l", main = "Price of chicken de-trended via regression")
 # lots outside CI bands so not reasonably white noise
 \end{lstlisting}
 \noi Note that the residuals are $x_t - \hat \mu_t = y_t$ which we would like to be stationary. \\
+
+\noi \textbf{Example: JJ prices de-trending via regression and differencing}\\
+\noi Consider the Johnson \& Johnson data in the \texttt{astsa} dataset (use \texttt{jj}):
+\begin{enumerate}
+    \item Fit a linear trend, plot it along with the original series, and examine residuals (plot them, and compute their ACF). Comment on your results.
+    \item Difference the data, and examine the corresponding ACF. Comment on your results.
+    \item Fit a quadratic trend, plot it along with the original series, and examine residuals (plot them, and compute their ACF). Comment on your results.
+    \item Apply a log transformation and fit a linear trend to the logged series. Plot results along with the original series, and examine residuals (plot them, and compute their ACF). Comment on your results.
+\end{enumerate}
+
+\begin{lstlisting}
+### Part 0 - Inspect the data
+library(astsa)
+par(mfrow = c(2, 1))
+plot(jj, type = "o", ylab = "Quarterly Earnings per Share",
+main = "JJ data")
+acf(jj)
+
+### Part 1 - Fit a linear trend
+trend.jj = time(jj) # time
+fit.jj <- lm(jj ~ trend.jj, na.action = NULL)
+summary(fit.jj)
+plot(jj, main = "JJ with linear trend")
+abline(fit.jj, col = "blue", lwd = 2)
+
+par(mfrow = c(2, 1))
+plot(jj - fitted(fit.jj),
+main = "JJ residuals after linear trend")
+acf(jj - fitted(fit.jj))
+# The residual plot has a U-shape showing linear trend not good
+
+### Part 2 - Differencing
+par(mfrow = c(2, 1))
+plot(diff(jj), type = "o", ylab = "Quarterly Earnings per Share",
+main = "JJ data after differencing")
+acf(diff(jj))
+# The diff plot has increasing magnitude violating stationarity. Series seemes to be
+# centered around 0, so maybe log transformation useful to equalise the variance.
+
+### Part 3 - Fit a quadratic trend
+trend.jj.2 = time(jj)^2 # time
+fit.jj.2 <- lm(jj ~ trend.jj + trend.jj.2, na.action = NULL)
+summary(fit.jj.2)
+plot(jj, main = "JJ with quadratic trend")
+points(fitted(fit.jj.2), col = "blue", lwd = 1)
+
+par(mfrow = c(2, 1))
+plot(jj - fitted(fit.jj.2),
+main = "JJ residuals after quadratic trend")
+acf(jj - fitted(fit.jj.2))
+# Quadratic trend looks okay, but still issue of increasing magnitude is residuals plot.
+# Log transform should fix.
+
+### Part 4 - Fit linear trend with log transformed data
+fit.jj.log <- lm(log(jj) ~ trend.jj, na.action = NULL)
+summary(fit.jj.log)
+plot(jj, main = "JJ with log transformation")
+points(exp(fitted(fit.jj.log)), col = "blue", lwd = 1) ## need exp()
+
+par(mfrow = c(2, 1))
+jj.log.residuals <- jj - exp(fitted(fit.jj.log))
+plot(jj.log.residuals,
+main = "JJ residuals after log transformation")
+acf(jj.log.residuals)
+# Log transform very similar to quadratic fit which makes sense, residuals start better
+# than quadratic bit but still increasing magnitude (variance) and log transformation
+# is too strong as residuals even become negative. None of the above
+# transformations are appropriate.
+
+### The best one is differencing of log transformed data.
+\end{lstlisting}
 
 \noi \textbf{Example: Global temperature de-trended via differencing}
 \begin{lstlisting}
@@ -3746,7 +3837,7 @@ $$x_t = \phi_1x_{t-1} + ... + \phi_px_{t-p} + w_t + \theta_1w_{t-1} + ... + \the
 \subsubsection{Yule-Walker Equations (and PACF)}
 \noi Partial correlation: $ \rho_{XY|Z} = \text{corr}\{X - \hat X, Y - \hat Y\}$ \\
 
-\noi \textbf{The partial auto-correlatino function (PACF)}: \\
+\noi \textbf{The partial auto-correlation function (PACF)}: \\
 \noi For a stationary process, $x_t$, denoed $\phi_{hh}$, for $h=1,2,...$, is:
 $$\phi_{11} = \text{corr}(x_{t+1}, x_t) = \rho(1) \text{ and } \phi_{hh} = \text{cor}(x_{t+h} - \hat{x}_{t+h}, x_t - \hat{x}_t) \text{ for } h \geq 2$$
 \begin{itemize}
@@ -3776,7 +3867,21 @@ $$\phi_{11} = \text{corr}(x_{t+1}, x_t) = \rho(1) \text{ and } \phi_{hh} = \text
     \item $\phi_{11} = \phi_1 = \rho(1)$.
     \item When $h > p$, $x_{t+h} - \hat{x}_{t+h} = w_{t+h}$ which has no overlap with $x_{t} - \hat{x}_t$ which only depends on $\{w_{t+h-1}, w_{t+h-2},...\} \implies \phi_{hh} = \text{corr}(w_{t+h}, x_t - \hat{x}_t) = 0, \: h> p$.
     \item The PACF of an $AR(p)$ model will be $0$ for $h > p$.
-\end{itemize}
+\end{itemize} \phantom{i}
+
+\noi \textbf{Example Yule-Walker Question}:
+\begin{align*}
+\hat r(1)&=0.70,\quad \hat r(2)=0.40,\\
+\hat r(1)&=\phi_1+\phi_2\,\hat r(1),\\
+\hat r(2)&=\phi_1\,\hat r(1)+\phi_2,\\
+0.70&=\phi_1+0.70\,\phi_2\quad\implies\quad\phi_1=0.70-0.70\,\phi_2,\\
+0.40&=0.70\,\phi_1+\phi_2
+=0.70(0.70-0.70\,\phi_2)+\phi_2
+=0.49-0.49\,\phi_2+\phi_2
+=0.49+0.51\,\phi_2,\\
+\phi_2&=\frac{0.40-0.49}{0.51}\approx -0.1765,\\
+\phi_1&=0.70-0.70(-0.1765)\approx 0.8236.
+\end{align*}
 
 \subsection{AR(p) Models}
 \noi Of the form
@@ -3839,6 +3944,29 @@ $$1 - \phi_1z - \phi_2z^2 - ... - \phi_pz^p = \phi(z) = 0$$
     \item The cutting off of $\phi_{hh}$ after $p$ lags is the signature of the $AR(p)$ model.
 \end{itemize} \phantom{i}
 
+\noi \textbf{Example: ACF of} $\boldsymbol{x_t = w_t -0.7x_{t-1}}$:
+\begin{align*}
+\gamma(k)
+&= \Cov(x_t,\,x_{t-k})
+   = \Cov\bigl(w_t - 0.7\,x_{t-1},\,x_{t-k}\bigr)\\
+&= \Cov\bigl(w_t - 0.7\,(w_{t-1} - 0.7\,x_{t-2}),\,x_{t-k}\bigr)\\
+&= \Cov\Bigl(w_t - 0.7\bigl(w_{t-1}
+       - 0.7\bigl(\dots
+       - 0.7\,(w_{t-k+1}-0.7\,x_{t-k})\bigr)\bigr),\,x_{t-k}\Bigr)\\
+&\stackrel{*}{=}
+   \Cov\bigl(-0.7\bigl(-0.7(\dots-0.7(-0.7\,x_{t-k}))\bigr),\,x_{t-k}\bigr)\\
+&= (-0.7)^k\,\Cov(x_{t-k},x_{t-k})
+  = (-0.7)^k\,\gamma(0)
+\\[6pt]
+\rho(k)
+&= \frac{\gamma(k)}{\gamma(0)}
+  = \frac{(-0.7)^k\,\gamma(0)}{\gamma(0)}
+  = (-0.7)^k,\quad k\ge0.
+\end{align*}
+
+\noindent
+* using \(\Cov(w_{t-k+s},x_{t-k})=0\) for \(s\ge1\). \\
+
 \noi \textbf{Examples of AR ACFs and PACFs in R}:
 \begin{lstlisting}
 set.seed(2)
@@ -3892,7 +4020,7 @@ $$x_t = w_t + \theta w_{t-1}$$
 \begin{align*}
     \rho(h) &= \begin{cases}
         1 & h = 0, \\
-        \frac{\theta}{(1+\theta^2)} & h=1, \\
+        \frac{\theta}{1+\theta^2} & h=1, \\
         0 & h >1
     \end{cases}
 \end{align*} \phantom{i}
@@ -3914,7 +4042,7 @@ plot(arima.sim(list(order = c(0,0,1), ma=0.5), n=100), ylab = "x")
     &= -\theta(-\theta w_{t-2} + x_{t-1}) + x_t \\
     &= \sum_{j=0}^{\infty} (-\theta)^jx_{t-j} \; \; \text{ if } |\theta| < 1
 \end{align*}
-\noi which is an infinite AR representation of the model. Since we need $|\theta| < 1$ for this to work, we need to choose the MA(1) model with $\theta=1/5, \sigma_w^2=25$. \\
+\noi which is an infinite AR representation of the model. Since we need $|\theta| < 1$ for this to work (for the series to converge), we need to choose the MA(1) model with $\theta=1/5, \sigma_w^2=25$. \\
 
 \noi General Case ($q>1$): \\
 $$x_t = \theta(B)w_t \Leftrightarrow \pi(B)x_t = w_t, \text{ where } \pi(B) = \theta^{-1}(B)$$
@@ -4006,7 +4134,8 @@ $$\text{Let } \theta(z) = 1 + 0.5z = 0 \implies z = -2, \text{since } |z|>1 \imp
 \noi Note that all coefficients of $z^j$ are $0$ for $j > 1$ on the RHS. We obtain then
 \begin{align*}
     \psi_1 - 0.9 = 0.5 &\implies \psi_1 = 1.4, \\
-    \psi_j - 0.9\psi_{j-1} = 0 &\implies \frac{\psi_j}{\psi_{j-1}} = 0.9, \: j >1
+    \psi_j - 0.9\psi_{j-1} = 0 &\implies \frac{\psi_j}{\psi_{j-1}} = 0.9, \: j >1 \\
+    \psi_j = 0.9\psi_{j-1} =& (0.9)^2\psi_{j-2} = ... = (0.9)^{j-1}\psi_1
 \end{align*}
 \noi and thus
 $$\psi_j = 1.4(0.9)^{j-1} \text{ for } j \geq 1$$
@@ -4026,6 +4155,11 @@ format(ARMAtoMA(ar=0.9, ma=0.5, 10), digits=2) # first 10 psi-weights
     1 + (\pi_1 + 0.5)z + (\pi_2 + 0.5\pi_1)z^2 + ... + (\pi_j + 0.5\pi_{j-1})z^j + ... &= 1 - 0.9z
 \end{align*}
 \noi By equating coefficients we get
+\begin{align*}
+    \pi_1 + 0.5 &= -0.9 \implies \pi_1 = -1.4 \\
+    \pi_j + 0.5\pi_{j-1} &= 0 \implies \pi_j = -0.5\pi_{j-1} \\
+    \pi_j &= 0.5^2\pi_{j-2} = -0.5^3\pi_{j-3} = ... = (-1)^{j-1}(0.5)^{j-1}\pi_0
+\end{align*}
 $$\pi_j = (-1)^j1.4(0.5)^{j-1} \text{ for } j \geq 1$$
 \noi and then
 $$w_t = \sum_{j=0}^{\infty}{\pi_jx_{t-j}} = x_t + \sum_{j=1}^{\infty}{\pi_j x_{t-j}}$$
@@ -4171,7 +4305,10 @@ $$x_t = \Phi x_{t-12} + w_t$$
 \end{align*}
 \noi Thus, the only nonzero correlation (aside from lag zero) are
 $$\rho(\pm12) = \Phi^k, \; k=1,2,...$$
-\noi The PACF will have one nonzero correlation at $s=12$ and then cut off.
+\noi The PACF will have one nonzero correlation at $s=12$ and then cut off. \\
+
+% \noi \textbf{Full Working out from my Notes}:
+
 
 \subsubsection{Multiplicative seasonal models: ARMA(p, q) x (P, Q)_s}
 \noi Of the form
@@ -4214,7 +4351,7 @@ $$x_t x_{t-h} = \Phi x_{t-12}x_{t-h} + w_tx_{t-h} + \theta w_{t-1}x_{t-h}$$
 \noi Example: if $\Phi = 0.8$ and $\theta = -0.5$, then the theoretical ACF and PACF become
 \begin{lstlisting}
 Phi = c(rep(0,11), 0.8)
-ACF - ARMAacf(ar = Phi, ma = -0.5, 50)[-1] # [-1] removes lag at time 0
+ACF = ARMAacf(ar = Phi, ma = -0.5, 50)[-1] # [-1] removes lag at time 0
 PACF = ARMAacf(ar = Phi, ma = -0.5, 50, pacf = TRUE)
 # Plotting
 par(mfrow = c(1,2))
@@ -5431,6 +5568,259 @@ and therefore
 =2 - 2^{1/\theta}.
 \]
 
+\subsection{Derivation of Kendall's Tau of Archimedean Copulas}
+\subsubsection{Clayton Copula}
+We start from the Archimedean formula
+\[
+\tau \;=\; 1 \;+\; 4 \int_{0}^{1} \frac{\phi(t)}{\phi'(t)} \, dt,
+\]
+and use the Clayton generator
+\[
+\phi(t) \;=\; \frac{t^{-\theta} - 1}{\theta}, 
+\quad
+\phi^{-1}(s)=(1+\theta s)^{-1/\theta},
+\]
+so that
+\[
+C(u,v) \;=\; \phi^{-1}\bigl(\phi(u)+\phi(v)\bigr)
+=(u^{-\theta}+v^{-\theta}-1)^{-1/\theta}.
+\]
+
+\bigskip
+\textbf{Step 1.} Compute \(\phi'(t)\):
+\[
+\phi'(t)
+= \frac{d}{dt}\!\Bigl(\frac{t^{-\theta}-1}{\theta}\Bigr)
+= \frac{-\theta\,t^{-\theta-1}}{\theta}
+= -\,t^{-\theta-1}.
+\]
+
+\bigskip
+\textbf{Step 2.} Form the integrand:
+\[
+\frac{\phi(t)}{\phi'(t)}
+= \frac{\frac{t^{-\theta}-1}{\theta}}{-\,t^{-\theta-1}}
+= \frac{t^{-\theta}-1}{\theta}\;t^{\theta+1}
+= \frac{t - t^{\theta+1}}{\theta}.
+\]
+
+\bigskip
+\textbf{Step 3.} Plug into the formula for \(\tau\):
+\[
+\tau
+= 1 + 4 \int_{0}^{1} \frac{\phi(t)}{\phi'(t)}\,dt
+= 1 + \frac{4}{\theta}
+  \int_{0}^{1} \bigl(t - t^{\theta+1}\bigr)\,dt.
+\]
+Split the integral:
+\[
+\int_{0}^{1} t \, dt = \frac12,
+\qquad
+\int_{0}^{1} t^{\theta+1}\,dt = \frac{1}{\theta+2}.
+\]
+Hence
+\[
+\int_{0}^{1} \bigl(t - t^{\theta+1}\bigr)\,dt
+= \frac12 - \frac{1}{\theta+2}
+= \frac{\theta}{2(\theta+2)}.
+\]
+Thus
+\[
+\tau
+= 1 + \frac{4}{\theta}\,\frac{\theta}{2(\theta+2)}
+= 1 + \frac{2}{\theta+2}
+= \frac{\theta+2+2}{\theta+2}
+= \frac{\theta}{\theta+2}.
+\]
+
+\bigskip
+\textbf{Conclusion.} For the Clayton copula with parameter \(\theta\),
+\[
+\boxed{
+\tau_{\mathrm{Clayton}}(\theta)
+= \frac{\theta}{\theta+2}.
+}
+\]
+
+\subsubsection{Gumbel Copula}
+We start from the Archimedean formula
+\[
+\tau \;=\; 1 \;+\; 4\int_{0}^{1}\frac{\phi(t)}{\phi'(t)}\,dt.
+\]
+For the Gumbel copula with parameter \(\theta\ge1\), the generator is
+\[
+\phi(t)=\bigl(-\ln t\bigr)^{\theta},\qquad
+\phi'(t)
+=-\frac{\theta\,\bigl(-\ln t\bigr)^{\theta-1}}{t}.
+\]
+Hence
+\[
+\frac{\phi(t)}{\phi'(t)}
+=\frac{(-\ln t)^\theta}{-\dfrac{\theta(-\ln t)^{\theta-1}}{t}}
+=\frac{t\,\ln t}{\theta},
+\]
+and so
+\[
+\tau
+=1+4\int_{0}^{1}\frac{\phi(t)}{\phi'(t)}\,dt
+=1+\frac{4}{\theta}\int_{0}^{1}t\,\ln t\,dt.
+\]
+
+\medskip
+\noindent\textbf{Integration by parts for \(\displaystyle \int_{0}^{1}t\,\ln t\,dt\):}
+
+Let
+\[
+u=\ln t,\quad dv=t\,dt,
+\qquad
+du=\frac{1}{t}\,dt,\quad v=\frac{t^2}{2}.
+\]
+Then
+\[
+\int_{0}^{1}t\,\ln t\,dt
+=\Bigl[\tfrac{t^2}{2}\ln t\Bigr]_{0}^{1}
+-\int_{0}^{1}\frac{t^2}{2}\cdot\frac{1}{t}\,dt
+=\Bigl[\tfrac{t^2}{2}\ln t\Bigr]_{0}^{1}
+-\tfrac{1}{2}\int_{0}^{1}t\,dt.
+\]
+Evaluate the boundary term and the remaining integral:
+\[
+\Bigl[\tfrac{t^2}{2}\ln t\Bigr]_{0}^{1}
+=\frac{1}{2}\ln1
+-\lim_{t\to0^+}\frac{t^2}{2}\ln t
+=0-0=0,
+\qquad
+\int_{0}^{1}t\,dt=\frac{1}{2}.
+\]
+Hence
+\[
+\int_{0}^{1}t\,\ln t\,dt
+=0-\tfrac{1}{2}\cdot\tfrac{1}{2}
+=-\frac{1}{4}.
+\]
+
+\medskip
+\noindent Substituting back into our formula for \(\tau\):
+\[
+\tau
+=1+\frac{4}{\theta}\Bigl(-\frac{1}{4}\Bigr)
+=1-\frac{1}{\theta},
+\]
+and therefore
+\[
+\boxed{\tau_{\mathrm{Gumbel}}(\theta)
+=1-\frac{1}{\theta},\quad\theta\ge1.}
+\]
+
+\subsection{Frank Copula}
+We start from the Archimedean‐copula formula
+\[
+\tau \;=\; 1 + 4 \int_{0}^{1} \frac{\varphi(t)}{\varphi'(t)} \, dt,
+\]
+where for the Frank copula with parameter $\theta\neq0$,
+\[
+\varphi(t)
+=\ln\!\bigl(1 - e^{-\theta}\bigr)
+\;-\;
+\ln\!\bigl(1 - e^{-\theta t}\bigr),
+\qquad
+\varphi'(t)
+=\frac{\theta\,e^{-\theta t}}{\,1 - e^{-\theta t}\,}.
+\]
+
+\subsubsection*{1. Define the auxiliary function $H(\theta)$}
+
+Let
+\[
+H(\theta)
+\;=\;
+\int_{0}^{1}
+\ln\!\bigl(1 - e^{-\theta t}\bigr)
+\,dt.
+\]
+
+\subsubsection*{2. Express the core integral in terms of $H$}
+
+Observe that
+\[
+\varphi(t)
+=\ln(1 - e^{-\theta}) - \ln(1 - e^{-\theta t}),
+\]
+so
+\[
+\int_{0}^{1}\frac{\varphi(t)}{\varphi'(t)}\,dt
+=
+\int_{0}^{1}
+\frac{\ln(1 - e^{-\theta}) - \ln(1 - e^{-\theta t})}
+     {\displaystyle\frac{\theta\,e^{-\theta t}}{1 - e^{-\theta t}}}
+\,dt
+=
+\frac{\ln(1 - e^{-\theta})}{\theta}
+-
+\frac{1}{\theta}\,H(\theta)
+\;-\;\frac{1}{\theta}.
+\]
+Hence
+\[
+\tau(\theta)
+=1
++4\biggl[
+\frac{\ln(1 - e^{-\theta}) - H(\theta)}{\theta}
+-\frac{1}{\theta}
+\biggr].
+\]
+
+\subsubsection*{3. Differentiate $H(\theta)$ under the integral sign}
+
+By Leibniz’s rule,
+\[
+H'(\theta)
+=\frac{d}{d\theta}\!\int_{0}^{1}\ln(1 - e^{-\theta t})\,dt
+=\int_{0}^{1}
+\frac{\partial}{\partial\theta}
+\ln(1 - e^{-\theta t})
+\,dt
+=\int_{0}^{1}
+\frac{-t\,e^{-\theta t}}{\,1 - e^{-\theta t}\,}
+\,dt.
+\]
+Set $s=\theta t$, so $dt=ds/\theta$ and $s\in[0,\theta]$.  Then
+\[
+H'(\theta)
+=-\frac{1}{\theta}
+\int_{0}^{\theta}\frac{s}{\,e^{s}-1\,}\;ds,
+\]
+which gives
+\[
+\int_{0}^{\theta}\frac{s}{e^{s}-1}\,ds
+=-\,\theta\,H'(\theta).
+\]
+
+\subsubsection*{4. Final assembly}
+
+Substitute back into the expression for $\tau(\theta)$:
+\[
+\tau(\theta)
+=1
++4\Biggl[
+\frac{\ln(1 - e^{-\theta}) - H(\theta)}{\theta}
+-\frac{1}{\theta}
+\Biggr]
+=1
+-\frac{4}{\theta}
++\frac{4}{\theta^{2}}
+\int_{0}^{\theta}\frac{s}{e^{s}-1}\,ds.
+\]
+This completes the proof of the integral form
+\[
+\boxed{
+\tau(\theta)
+=1
+-\frac{4}{\theta}
++\frac{4}{\theta^{2}}
+\int_{0}^{\theta}\frac{s}{e^{s}-1}\,ds
+}.
+\]
 
 
 
@@ -5497,6 +5887,7 @@ Y_t = Z_t + \theta Z_{t-1}.
 \subsection{Predictions and Graphs of log data SARIMA}
 \noi Example with \texttt{jj} data:
 \begin{lstlisting}
+fit.gg <- sarima(log(jj), 1, 1, 0, 1, 1, 0, 4) # also sMA(1) instead of sAR(1) is good
 jj.pr <- predict(fit.jj$fit, n.ahead = 40, ci = 0.95)
 jj.pred <- ts(c(jj, exp(jj.pr$pred)), start = start(jj), frequency = frequency(jj))
 
@@ -5670,7 +6061,27 @@ data %>%
 data %>%
   group_by(block_column) %>%
   summarise(max_value = max(target_column, na.rm = TRUE))
+\end{lstlisting} 
+
+\subsection{Using polyroot}
+\noi Using \texttt{polyroot} to find roots of polynomials in R (good for finding roots of characteristic polynomials for AR and MA).
+\begin{lstlisting}
+# Suppose AR(2) with phi1 = 0.5, phi2 = -0.3
+phi <- c(0.5, -0.3)
+
+# Build coefficient vector for 1 - phi1*z - phi2*z^2:
+coefs <- c(1, -phi) # == c(1, -0.5, 0.3)
+
+roots <- polyroot(coefs)
+print(roots)
 \end{lstlisting}
+
+\subsection{Installing tinytex}
+\begin{lstlisting}
+install.packages("tinytex")
+tinytex::install_tinytex()
+\end{lstlisting}
+
 \newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
